@@ -1,0 +1,18 @@
+
+CREATE TABLE Categories
+(
+	Id INT PRIMARY KEY IDENTITY,
+	Name VARCHAR(128) NOT NULL
+)
+
+CREATE TABLE Products
+(
+	Id INT PRIMARY KEY IDENTITY,
+	Name VARCHAR(128) NOT NULL,
+	CategoryId INT,
+	Price DECIMAL(10,2) NOT NULL CHECK(Price > 0),
+	Stock INT NOT NULL CHECK(Stock >= 0)
+
+	FOREIGN KEY (CategoryId)
+		REFERENCES Categories(Id)
+);
