@@ -42,7 +42,7 @@ static class BulkOperations
                             ) &&
                             p.GetCustomAttribute<IsIdentity>() is null
                         )
-                       .Select( p => ToSqlValue(p))
+                       .Select( p => ToSqlValue(p.GetValue(obj)))
                 )
             );
             valuesInSql.Append(')');
@@ -52,13 +52,13 @@ static class BulkOperations
         }
 
         // FINALLY
-
+        Console.WriteLine(valuesInSql);
         var query = @$"
         INSERT INTO {tableName}
         VALUES {valuesInSql.ToString()};
         ";
 
-        await connection.ExecuteAsync(query);
+        //await connection.ExecuteAsync(query);
     }
 
     public static async Task BulkUpdateAsync<T>(this IDbConnection connection, IEnumerable<T> values)
@@ -104,7 +104,7 @@ static class BulkOperations
         return value switch
         {
             string s => $"'{EscapeString(s)}'",
-            char c => $"'{c}'",
+            char c => $"'{EscapeString(c.ToString())}'",
 
             DateTime dt =>
                 $"'{dt:yyyy-MM-ddTHH:mm:ss.fff}'",

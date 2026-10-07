@@ -102,3 +102,18 @@ if (false)
 #endregion
 
 
+if (true)
+{
+    var categories = new List<Category>()
+    {
+        new Category
+        {
+            Name = "Electronics"
+        },
+        new Category
+        {
+            Name = "Exclusive Items"
+        }
+    };
+    await connection.BulkInsertAsync<Category>(categories);
+}
