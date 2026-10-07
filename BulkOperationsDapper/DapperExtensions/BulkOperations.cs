@@ -14,13 +14,8 @@ namespace BulkOperationsDapper.DapperExtensions;
 
 static class BulkOperations
 {
-    // THIS BULK INSERT ONLY SUPPORTS STRING AND INTEGER TYPED PROPERTIES :(
     public static async Task BulkInsertAsync<T>(this IDbConnection connection, IEnumerable<T> values)
     {
-        // DETERMINING TABLE NAME
-        // before
-        //string tableName = $"{typeof(T).Name}s";
-        // after
         string tableName = GetTableName<T>();
 
         // THE PART THAT COMES AFTER VALUES KEYWORD IN SQL
@@ -47,13 +42,7 @@ static class BulkOperations
                             ) &&
                             p.GetCustomAttribute<IsIdentity>() is null
                         )
-                       .Select( p => 
-                       {
-                           if (p.PropertyType == typeof(string))
-                               return $"\'{p.GetValue(obj)}\'" ?? "NULL";
-                           else
-                               return p.GetValue(obj)?.ToString() ?? "NULL";
-                       })
+                       .Select( p => ToSqlValue(p))
                 )
             );
             valuesInSql.Append(')');
@@ -89,7 +78,7 @@ static class BulkOperations
         ON v.Id = {tableName}.Id;
         "; // 1 => (obj1.prp1, obj1.prp2), (obj2.prp1,...)... 
         // 2 => (prp1, prp2,....)
-        // 3 tableName.prp1 = v.prp1..... with other prps too that are not null
+        // 3 tableName.prp1 = v.prp1..... 
     }
 
     // ============= HELPER METHODS ==============
@@ -102,5 +91,46 @@ static class BulkOperations
             (
                 $"Type {typeof(T).Name} doesn't have a Table attribute."
             );
+    }
+    private static string EscapeString(string value)
+    {
+        return value.Replace("'", "''");
+    }
+    private static string ToSqlValue(object? value)
+    {
+        if (value is null)
+            return "NULL";
+
+        return value switch
+        {
+            string s => $"'{EscapeString(s)}'",
+            char c => $"'{c}'",
+
+            DateTime dt =>
+                $"'{dt:yyyy-MM-ddTHH:mm:ss.fff}'",
+
+            DateTimeOffset dto =>
+                $"'{dto:yyyy-MM-ddTHH:mm:ss.fffzzz}'",
+
+            DateOnly d =>
+                $"'{d:yyyy-MM-dd}'",
+
+            TimeOnly t =>
+                $"'{t:HH:mm:ss.fffffff}'",
+
+            Guid g =>
+                $"'{g}'",
+
+            bool b =>
+                b ? "1" : "0",
+
+            byte[] bytes =>
+                $"0x{Convert.ToHexString(bytes)}",
+
+            _ => Convert.ToString(
+                value,
+                System.Globalization.CultureInfo.InvariantCulture
+            )!
+        };
     }
 }
